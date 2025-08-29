@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+    <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="과제 : SNS 친구 추천 시스템 sns에서 사용자들 간의 친구 관계를 그래프로 표현하고, 특정 사용자에게 새로운 친구를 추천하는 프로그램\n요구사항 무방향 그래프로 친구 관계를 표현 특정 사용자의 친구가 아니면서, 공통 친구가 가장 많은 사용자들을 추천 추천 대상은 공통 친구 수가 많은 순서대로 정렬 단, 공통 친구 수가 같다면 사용자 ID 오름차순으로 정렬 주의사항 그래프는 인접 리스트로 표현해야 한다. 추천 친구가 없을 경우에는 &ldquo;No Friend&quot;라고 출력해야 한다. 프로그램의 실행은 명령줄에서 아래와 같이 실행되어야 한다. graph.h #ifndef _GRAPH_ #define _GRAPH_ #define TRUE 1 #define FALSE 0 #define MAX_VERTICES 50 typedef struct GraphNode { int vertex; struct GraphNode* link; } GraphNode; typedef struct GraphType { int n;\tGraphNode* adj_list[MAX_VERTICES]; } GraphType; void graph_init(GraphType* g); void insert_vertex(GraphType* g, int v); void insert_edge(GraphType* g, int u, int v); void Findfriend(GraphType* g, int id, int n); int Checknode(GraphType* g, int id, int n); #endif // !_GRAPH_ graph.c #define _CRT_SECURE_NO_WARNINGS #define _CRT_NONSTDC_NO_DEPRECATE #include &lt;stdio.h&gt; #include &lt;string.h&gt; #include &lt;ctype.h&gt; #include &lt;stdlib.h&gt; #include &lt;math.h&gt; #include &lt;time.h&gt; #include &lt;malloc.h&gt; #include &#34;graph.h&#34; void graph_init(GraphType* g) { int v; g-&gt;n = 0; for (v = 0; v &lt; MAX_VERTICES; v++) g-&gt;adj_list[v] = NULL; } void insert_vertex(GraphType* g, int v) { if (((g-&gt;n) + 1) &gt; MAX_VERTICES) { fprintf(stderr, &#34;그래프: 정점의 개수 초과&#34;); return; } g-&gt;n++; } void insert_edge(GraphType* g, int u, int v) { GraphNode* node; if (u &gt;= g-&gt;n || v &gt;= g-&gt;n) { fprintf(stderr, &#34;그래프: 정점 번호 오류&#34;); return; } node = (GraphNode*)malloc(sizeof(GraphNode)); node-&gt;vertex = v; node-&gt;link = g-&gt;adj_list[u]; g-&gt;adj_list[u] = node; } // 친구를 찾아서 추천해주는 코드 void Findfriend(GraphType* g, int id, int n){ id -= 1; int *A = (int*)malloc(n * sizeof(int)); int *B = (int*)malloc(n * sizeof(int)); for (int i = 0; i &lt; n; i++){ A[i] = 0; B[i] = 0; } // id와 연결되어 있는 노드들을 탐색 GraphNode* node = g-&gt;adj_list[id]; for (;node != NULL; node = node-&gt;link){ GraphNode* _node = g-&gt;adj_list[node-&gt;vertex]; while (_node != NULL){ if (_node-&gt;link != NULL &amp;&amp; _node-&gt;vertex != id) { // 노드가 겹치는 지 확인 if (Checknode(g, id, _node-&gt;vertex)){ // B 배열에 인덱스를 저장 B[_node-&gt;vertex] = _node-&gt;vertex; // A 배열에 해당 인덱스의 횟수 카운트 A[_node-&gt;vertex] += 1; } } _node = _node-&gt;link; } } // 정렬 for (int i = 0; i &lt; n - 1; i++){ for (int j = i + 1; j &lt; n; j++){ if (B[i] != 0){ // 공통 친구 수가 많은 순서대로 정렬 if (A[B[i]] &lt; A[B[i+1]]){ int temp = B[i]; B[i] = B[i+1]; B[i+1] = temp; } // 사용자 ID 오름차순으로 정렬 if (A[B[i]] == A[B[i+1]]){ if (B[i] &gt; B[i+1]){ int temp = B[i]; B[i] = B[i+1]; B[i+1] = temp; } } } } } int sum = 0; for (int i = 0; i &lt; n; i++){ if (A[i] != 0) printf(&#34;%d %d\\n&#34;, B[i] + 1, A[i]); sum += A[i]; } // 추천 친구가 없다면 &#34;No Friend&#34; 출력 if (sum == 0) printf(&#34;No friend\\n&#34;); free(A); free(B); } // 겹치는 노드의 여부를 체크 int Checknode(GraphType* g, int id, int n) { GraphNode* checkNode = g-&gt;adj_list[id]; while (checkNode != NULL) { if (checkNode-&gt;vertex == n) { return 0; } checkNode = checkNode-&gt;link; } return 1; } main.c #define _CRT_SECURE_NO_WARNINGS #define _CRT_NONSTDC_NO_DEPRECATE #include &lt;stdio.h&gt; #include &lt;string.h&gt; #include &lt;ctype.h&gt; #include &lt;stdlib.h&gt; #include &lt;math.h&gt; #include &lt;time.h&gt; #include &lt;malloc.h&gt; #include &#34;graph.h&#34; int main(int argc, char *argv[]) { if (argc != 2) { fprintf(stderr, &#34;Usage: %s graph.txt\\n&#34;, argv[0]); exit(EXIT_FAILURE); } const char* fname = argv[1]; FILE* fin = fopen(fname, &#34;r&#34;); if (fin == NULL) { fprintf(stderr, &#34;Can`t open %s\\n&#34;, fname); exit(EXIT_FAILURE); } GraphType g; graph_init(&amp;g); int n, m, id, fr, to; fscanf(fin, &#34;%d %d %d&#34;, &amp;n, &amp;m, &amp;id); for (int i = 0; i &lt; n; i++) insert_vertex(&amp;g, i); for (int i = 0; i &lt; m; i++) { fscanf(fin, &#34;%d %d&#34;, &amp;fr, &amp;to); insert_edge(&amp;g, fr - 1, to - 1); insert_edge(&amp;g, to - 1, fr - 1); } Findfriend(&amp;g, id, n); fclose(fin); return 0; } ">
+<title>SNS 친구 추천 시스템</title>
+
+<link rel='canonical' href='http://localhost:1313/posts/datastructureassignment/'>
+
+<link rel="stylesheet" href="/scss/style.min.946cca6c6259ef94ac55abfae7c7bf3291ea3ed5eea17ef77500b257217c6710.css"><meta property='og:title' content="SNS 친구 추천 시스템">
+<meta property='og:description' content="과제 : SNS 친구 추천 시스템 sns에서 사용자들 간의 친구 관계를 그래프로 표현하고, 특정 사용자에게 새로운 친구를 추천하는 프로그램\n요구사항 무방향 그래프로 친구 관계를 표현 특정 사용자의 친구가 아니면서, 공통 친구가 가장 많은 사용자들을 추천 추천 대상은 공통 친구 수가 많은 순서대로 정렬 단, 공통 친구 수가 같다면 사용자 ID 오름차순으로 정렬 주의사항 그래프는 인접 리스트로 표현해야 한다. 추천 친구가 없을 경우에는 &ldquo;No Friend&quot;라고 출력해야 한다. 프로그램의 실행은 명령줄에서 아래와 같이 실행되어야 한다. graph.h #ifndef _GRAPH_ #define _GRAPH_ #define TRUE 1 #define FALSE 0 #define MAX_VERTICES 50 typedef struct GraphNode { int vertex; struct GraphNode* link; } GraphNode; typedef struct GraphType { int n;\tGraphNode* adj_list[MAX_VERTICES]; } GraphType; void graph_init(GraphType* g); void insert_vertex(GraphType* g, int v); void insert_edge(GraphType* g, int u, int v); void Findfriend(GraphType* g, int id, int n); int Checknode(GraphType* g, int id, int n); #endif // !_GRAPH_ graph.c #define _CRT_SECURE_NO_WARNINGS #define _CRT_NONSTDC_NO_DEPRECATE #include &lt;stdio.h&gt; #include &lt;string.h&gt; #include &lt;ctype.h&gt; #include &lt;stdlib.h&gt; #include &lt;math.h&gt; #include &lt;time.h&gt; #include &lt;malloc.h&gt; #include &#34;graph.h&#34; void graph_init(GraphType* g) { int v; g-&gt;n = 0; for (v = 0; v &lt; MAX_VERTICES; v++) g-&gt;adj_list[v] = NULL; } void insert_vertex(GraphType* g, int v) { if (((g-&gt;n) + 1) &gt; MAX_VERTICES) { fprintf(stderr, &#34;그래프: 정점의 개수 초과&#34;); return; } g-&gt;n++; } void insert_edge(GraphType* g, int u, int v) { GraphNode* node; if (u &gt;= g-&gt;n || v &gt;= g-&gt;n) { fprintf(stderr, &#34;그래프: 정점 번호 오류&#34;); return; } node = (GraphNode*)malloc(sizeof(GraphNode)); node-&gt;vertex = v; node-&gt;link = g-&gt;adj_list[u]; g-&gt;adj_list[u] = node; } // 친구를 찾아서 추천해주는 코드 void Findfriend(GraphType* g, int id, int n){ id -= 1; int *A = (int*)malloc(n * sizeof(int)); int *B = (int*)malloc(n * sizeof(int)); for (int i = 0; i &lt; n; i++){ A[i] = 0; B[i] = 0; } // id와 연결되어 있는 노드들을 탐색 GraphNode* node = g-&gt;adj_list[id]; for (;node != NULL; node = node-&gt;link){ GraphNode* _node = g-&gt;adj_list[node-&gt;vertex]; while (_node != NULL){ if (_node-&gt;link != NULL &amp;&amp; _node-&gt;vertex != id) { // 노드가 겹치는 지 확인 if (Checknode(g, id, _node-&gt;vertex)){ // B 배열에 인덱스를 저장 B[_node-&gt;vertex] = _node-&gt;vertex; // A 배열에 해당 인덱스의 횟수 카운트 A[_node-&gt;vertex] += 1; } } _node = _node-&gt;link; } } // 정렬 for (int i = 0; i &lt; n - 1; i++){ for (int j = i + 1; j &lt; n; j++){ if (B[i] != 0){ // 공통 친구 수가 많은 순서대로 정렬 if (A[B[i]] &lt; A[B[i+1]]){ int temp = B[i]; B[i] = B[i+1]; B[i+1] = temp; } // 사용자 ID 오름차순으로 정렬 if (A[B[i]] == A[B[i+1]]){ if (B[i] &gt; B[i+1]){ int temp = B[i]; B[i] = B[i+1]; B[i+1] = temp; } } } } } int sum = 0; for (int i = 0; i &lt; n; i++){ if (A[i] != 0) printf(&#34;%d %d\\n&#34;, B[i] + 1, A[i]); sum += A[i]; } // 추천 친구가 없다면 &#34;No Friend&#34; 출력 if (sum == 0) printf(&#34;No friend\\n&#34;); free(A); free(B); } // 겹치는 노드의 여부를 체크 int Checknode(GraphType* g, int id, int n) { GraphNode* checkNode = g-&gt;adj_list[id]; while (checkNode != NULL) { if (checkNode-&gt;vertex == n) { return 0; } checkNode = checkNode-&gt;link; } return 1; } main.c #define _CRT_SECURE_NO_WARNINGS #define _CRT_NONSTDC_NO_DEPRECATE #include &lt;stdio.h&gt; #include &lt;string.h&gt; #include &lt;ctype.h&gt; #include &lt;stdlib.h&gt; #include &lt;math.h&gt; #include &lt;time.h&gt; #include &lt;malloc.h&gt; #include &#34;graph.h&#34; int main(int argc, char *argv[]) { if (argc != 2) { fprintf(stderr, &#34;Usage: %s graph.txt\\n&#34;, argv[0]); exit(EXIT_FAILURE); } const char* fname = argv[1]; FILE* fin = fopen(fname, &#34;r&#34;); if (fin == NULL) { fprintf(stderr, &#34;Can`t open %s\\n&#34;, fname); exit(EXIT_FAILURE); } GraphType g; graph_init(&amp;g); int n, m, id, fr, to; fscanf(fin, &#34;%d %d %d&#34;, &amp;n, &amp;m, &amp;id); for (int i = 0; i &lt; n; i++) insert_vertex(&amp;g, i); for (int i = 0; i &lt; m; i++) { fscanf(fin, &#34;%d %d&#34;, &amp;fr, &amp;to); insert_edge(&amp;g, fr - 1, to - 1); insert_edge(&amp;g, to - 1, fr - 1); } Findfriend(&amp;g, id, n); fclose(fin); return 0; } ">
+<meta property='og:url' content='http://localhost:1313/posts/datastructureassignment/'>
+<meta property='og:site_name' content='My New Hugo Site'>
+<meta property='og:type' content='article'><meta property='article:section' content='Posts' /><meta property='article:published_time' content='2025-06-04T15:49:58&#43;09:00'/><meta property='article:modified_time' content='2025-06-04T15:49:58&#43;09:00'/>
+<meta name="twitter:title" content="SNS 친구 추천 시스템">
+<meta name="twitter:description" content="과제 : SNS 친구 추천 시스템 sns에서 사용자들 간의 친구 관계를 그래프로 표현하고, 특정 사용자에게 새로운 친구를 추천하는 프로그램\n요구사항 무방향 그래프로 친구 관계를 표현 특정 사용자의 친구가 아니면서, 공통 친구가 가장 많은 사용자들을 추천 추천 대상은 공통 친구 수가 많은 순서대로 정렬 단, 공통 친구 수가 같다면 사용자 ID 오름차순으로 정렬 주의사항 그래프는 인접 리스트로 표현해야 한다. 추천 친구가 없을 경우에는 &ldquo;No Friend&quot;라고 출력해야 한다. 프로그램의 실행은 명령줄에서 아래와 같이 실행되어야 한다. graph.h #ifndef _GRAPH_ #define _GRAPH_ #define TRUE 1 #define FALSE 0 #define MAX_VERTICES 50 typedef struct GraphNode { int vertex; struct GraphNode* link; } GraphNode; typedef struct GraphType { int n;\tGraphNode* adj_list[MAX_VERTICES]; } GraphType; void graph_init(GraphType* g); void insert_vertex(GraphType* g, int v); void insert_edge(GraphType* g, int u, int v); void Findfriend(GraphType* g, int id, int n); int Checknode(GraphType* g, int id, int n); #endif // !_GRAPH_ graph.c #define _CRT_SECURE_NO_WARNINGS #define _CRT_NONSTDC_NO_DEPRECATE #include &lt;stdio.h&gt; #include &lt;string.h&gt; #include &lt;ctype.h&gt; #include &lt;stdlib.h&gt; #include &lt;math.h&gt; #include &lt;time.h&gt; #include &lt;malloc.h&gt; #include &#34;graph.h&#34; void graph_init(GraphType* g) { int v; g-&gt;n = 0; for (v = 0; v &lt; MAX_VERTICES; v++) g-&gt;adj_list[v] = NULL; } void insert_vertex(GraphType* g, int v) { if (((g-&gt;n) + 1) &gt; MAX_VERTICES) { fprintf(stderr, &#34;그래프: 정점의 개수 초과&#34;); return; } g-&gt;n++; } void insert_edge(GraphType* g, int u, int v) { GraphNode* node; if (u &gt;= g-&gt;n || v &gt;= g-&gt;n) { fprintf(stderr, &#34;그래프: 정점 번호 오류&#34;); return; } node = (GraphNode*)malloc(sizeof(GraphNode)); node-&gt;vertex = v; node-&gt;link = g-&gt;adj_list[u]; g-&gt;adj_list[u] = node; } // 친구를 찾아서 추천해주는 코드 void Findfriend(GraphType* g, int id, int n){ id -= 1; int *A = (int*)malloc(n * sizeof(int)); int *B = (int*)malloc(n * sizeof(int)); for (int i = 0; i &lt; n; i++){ A[i] = 0; B[i] = 0; } // id와 연결되어 있는 노드들을 탐색 GraphNode* node = g-&gt;adj_list[id]; for (;node != NULL; node = node-&gt;link){ GraphNode* _node = g-&gt;adj_list[node-&gt;vertex]; while (_node != NULL){ if (_node-&gt;link != NULL &amp;&amp; _node-&gt;vertex != id) { // 노드가 겹치는 지 확인 if (Checknode(g, id, _node-&gt;vertex)){ // B 배열에 인덱스를 저장 B[_node-&gt;vertex] = _node-&gt;vertex; // A 배열에 해당 인덱스의 횟수 카운트 A[_node-&gt;vertex] += 1; } } _node = _node-&gt;link; } } // 정렬 for (int i = 0; i &lt; n - 1; i++){ for (int j = i + 1; j &lt; n; j++){ if (B[i] != 0){ // 공통 친구 수가 많은 순서대로 정렬 if (A[B[i]] &lt; A[B[i+1]]){ int temp = B[i]; B[i] = B[i+1]; B[i+1] = temp; } // 사용자 ID 오름차순으로 정렬 if (A[B[i]] == A[B[i+1]]){ if (B[i] &gt; B[i+1]){ int temp = B[i]; B[i] = B[i+1]; B[i+1] = temp; } } } } } int sum = 0; for (int i = 0; i &lt; n; i++){ if (A[i] != 0) printf(&#34;%d %d\\n&#34;, B[i] + 1, A[i]); sum += A[i]; } // 추천 친구가 없다면 &#34;No Friend&#34; 출력 if (sum == 0) printf(&#34;No friend\\n&#34;); free(A); free(B); } // 겹치는 노드의 여부를 체크 int Checknode(GraphType* g, int id, int n) { GraphNode* checkNode = g-&gt;adj_list[id]; while (checkNode != NULL) { if (checkNode-&gt;vertex == n) { return 0; } checkNode = checkNode-&gt;link; } return 1; } main.c #define _CRT_SECURE_NO_WARNINGS #define _CRT_NONSTDC_NO_DEPRECATE #include &lt;stdio.h&gt; #include &lt;string.h&gt; #include &lt;ctype.h&gt; #include &lt;stdlib.h&gt; #include &lt;math.h&gt; #include &lt;time.h&gt; #include &lt;malloc.h&gt; #include &#34;graph.h&#34; int main(int argc, char *argv[]) { if (argc != 2) { fprintf(stderr, &#34;Usage: %s graph.txt\\n&#34;, argv[0]); exit(EXIT_FAILURE); } const char* fname = argv[1]; FILE* fin = fopen(fname, &#34;r&#34;); if (fin == NULL) { fprintf(stderr, &#34;Can`t open %s\\n&#34;, fname); exit(EXIT_FAILURE); } GraphType g; graph_init(&amp;g); int n, m, id, fr, to; fscanf(fin, &#34;%d %d %d&#34;, &amp;n, &amp;m, &amp;id); for (int i = 0; i &lt; n; i++) insert_vertex(&amp;g, i); for (int i = 0; i &lt; m; i++) { fscanf(fin, &#34;%d %d&#34;, &amp;fr, &amp;to); insert_edge(&amp;g, fr - 1, to - 1); insert_edge(&amp;g, to - 1, fr - 1); } Findfriend(&amp;g, id, n); fclose(fin); return 0; } ">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu_f509edb42ecc0ebd.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">My New Hugo Site</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/posts/datastructureassignment/">SNS 친구 추천 시스템</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Jun 04, 2025</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    3 minute read
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="과제--sns-친구-추천-시스템">과제 : SNS 친구 추천 시스템
+</h2><blockquote>
+<p>sns에서 사용자들 간의 친구 관계를 그래프로 표현하고, 특정 사용자에게 새로운 친구를 추천하는 프로그램</p></blockquote>
+<h4 id="요구사항">요구사항
+</h4><ul>
+<li>무방향 그래프로 친구 관계를 표현</li>
+<li>특정 사용자의 친구가 아니면서, 공통 친구가 가장 많은 사용자들을 추천</li>
+<li>추천 대상은 공통 친구 수가 많은 순서대로 정렬</li>
+<li>단, 공통 친구 수가 같다면 사용자 ID 오름차순으로 정렬</li>
+</ul>
+<h4 id="주의사항">주의사항
+</h4><ul>
+<li>그래프는 인접 리스트로 표현해야 한다.</li>
+<li>추천 친구가 없을 경우에는 &ldquo;No Friend&quot;라고 출력해야 한다.</li>
+<li>프로그램의 실행은 명령줄에서 아래와 같이 실행되어야 한다.</li>
+</ul>
+<h5 id="graphh">graph.h
+</h5><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#ifndef _GRAPH_
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#define _GRAPH_
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#define TRUE 1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#define FALSE 0
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#define MAX_VERTICES 50
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> GraphNode
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> vertex;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">struct</span> GraphNode<span style="color:#f92672">*</span> link;
+</span></span><span style="display:flex;"><span>} GraphNode;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> GraphType {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> n;	
+</span></span><span style="display:flex;"><span>	GraphNode<span style="color:#f92672">*</span> adj_list[MAX_VERTICES];
+</span></span><span style="display:flex;"><span>} GraphType;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">graph_init</span>(GraphType<span style="color:#f92672">*</span> g);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">insert_vertex</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> v);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">insert_edge</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> u, <span style="color:#66d9ef">int</span> v);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Findfriend</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> id, <span style="color:#66d9ef">int</span> n);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">Checknode</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> id, <span style="color:#66d9ef">int</span> n);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif </span><span style="color:#75715e">// !_GRAPH_
+</span></span></span></code></pre></div><h5 id="graphc">graph.c
+</h5><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#define _CRT_SECURE_NO_WARNINGS 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#define _CRT_NONSTDC_NO_DEPRECATE
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;string.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;ctype.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;math.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;time.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;malloc.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;graph.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">graph_init</span>(GraphType<span style="color:#f92672">*</span> g)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> v;
+</span></span><span style="display:flex;"><span>	g<span style="color:#f92672">-&gt;</span>n <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> (v <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; v <span style="color:#f92672">&lt;</span> MAX_VERTICES; v<span style="color:#f92672">++</span>)
+</span></span><span style="display:flex;"><span>		g<span style="color:#f92672">-&gt;</span>adj_list[v] <span style="color:#f92672">=</span> NULL;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">insert_vertex</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> v)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (((g<span style="color:#f92672">-&gt;</span>n) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">&gt;</span> MAX_VERTICES) {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fprintf</span>(stderr, <span style="color:#e6db74">&#34;그래프: 정점의 개수 초과&#34;</span>);
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	g<span style="color:#f92672">-&gt;</span>n<span style="color:#f92672">++</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">insert_edge</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> u, <span style="color:#66d9ef">int</span> v)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	GraphNode<span style="color:#f92672">*</span> node;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (u <span style="color:#f92672">&gt;=</span> g<span style="color:#f92672">-&gt;</span>n <span style="color:#f92672">||</span> v <span style="color:#f92672">&gt;=</span> g<span style="color:#f92672">-&gt;</span>n) {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fprintf</span>(stderr, <span style="color:#e6db74">&#34;그래프: 정점 번호 오류&#34;</span>);
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	node <span style="color:#f92672">=</span> (GraphNode<span style="color:#f92672">*</span>)<span style="color:#a6e22e">malloc</span>(<span style="color:#66d9ef">sizeof</span>(GraphNode));
+</span></span><span style="display:flex;"><span>	node<span style="color:#f92672">-&gt;</span>vertex <span style="color:#f92672">=</span> v;
+</span></span><span style="display:flex;"><span>	node<span style="color:#f92672">-&gt;</span>link <span style="color:#f92672">=</span> g<span style="color:#f92672">-&gt;</span>adj_list[u];
+</span></span><span style="display:flex;"><span>	g<span style="color:#f92672">-&gt;</span>adj_list[u] <span style="color:#f92672">=</span> node;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 친구를 찾아서 추천해주는 코드
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Findfriend</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> id, <span style="color:#66d9ef">int</span> n){
+</span></span><span style="display:flex;"><span>	id <span style="color:#f92672">-=</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>A <span style="color:#f92672">=</span> (<span style="color:#66d9ef">int</span><span style="color:#f92672">*</span>)<span style="color:#a6e22e">malloc</span>(n <span style="color:#f92672">*</span> <span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">int</span>));
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>B <span style="color:#f92672">=</span> (<span style="color:#66d9ef">int</span><span style="color:#f92672">*</span>)<span style="color:#a6e22e">malloc</span>(n <span style="color:#f92672">*</span> <span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">int</span>));
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> n; i<span style="color:#f92672">++</span>){
+</span></span><span style="display:flex;"><span>		A[i] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>		B[i] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// id와 연결되어 있는 노드들을 탐색
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	GraphNode<span style="color:#f92672">*</span> node <span style="color:#f92672">=</span> g<span style="color:#f92672">-&gt;</span>adj_list[id];
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> (;node <span style="color:#f92672">!=</span> NULL; node <span style="color:#f92672">=</span> node<span style="color:#f92672">-&gt;</span>link){
+</span></span><span style="display:flex;"><span>		GraphNode<span style="color:#f92672">*</span> _node <span style="color:#f92672">=</span> g<span style="color:#f92672">-&gt;</span>adj_list[node<span style="color:#f92672">-&gt;</span>vertex];
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">while</span> (_node <span style="color:#f92672">!=</span> NULL){
+</span></span><span style="display:flex;"><span>			<span style="color:#66d9ef">if</span> (_node<span style="color:#f92672">-&gt;</span>link <span style="color:#f92672">!=</span> NULL <span style="color:#f92672">&amp;&amp;</span> _node<span style="color:#f92672">-&gt;</span>vertex <span style="color:#f92672">!=</span> id) {
+</span></span><span style="display:flex;"><span>				<span style="color:#75715e">// 노드가 겹치는 지 확인
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>				<span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">Checknode</span>(g, id, _node<span style="color:#f92672">-&gt;</span>vertex)){
+</span></span><span style="display:flex;"><span>					<span style="color:#75715e">// B 배열에 인덱스를 저장
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>					B[_node<span style="color:#f92672">-&gt;</span>vertex] <span style="color:#f92672">=</span> _node<span style="color:#f92672">-&gt;</span>vertex;
+</span></span><span style="display:flex;"><span>					<span style="color:#75715e">// A 배열에 해당 인덱스의 횟수 카운트
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>					A[_node<span style="color:#f92672">-&gt;</span>vertex] <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>				}
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>			_node <span style="color:#f92672">=</span> _node<span style="color:#f92672">-&gt;</span>link;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 정렬
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> n <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>; i<span style="color:#f92672">++</span>){
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> j <span style="color:#f92672">=</span> i <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>; j <span style="color:#f92672">&lt;</span> n; j<span style="color:#f92672">++</span>){
+</span></span><span style="display:flex;"><span>			<span style="color:#66d9ef">if</span> (B[i] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>){
+</span></span><span style="display:flex;"><span>				<span style="color:#75715e">// 공통 친구 수가 많은 순서대로 정렬
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>				<span style="color:#66d9ef">if</span> (A[B[i]] <span style="color:#f92672">&lt;</span> A[B[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]]){
+</span></span><span style="display:flex;"><span>					<span style="color:#66d9ef">int</span> temp <span style="color:#f92672">=</span> B[i];
+</span></span><span style="display:flex;"><span>					B[i] <span style="color:#f92672">=</span> B[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>];
+</span></span><span style="display:flex;"><span>					B[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> temp;
+</span></span><span style="display:flex;"><span>				}
+</span></span><span style="display:flex;"><span>				<span style="color:#75715e">// 사용자 ID 오름차순으로 정렬
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>				<span style="color:#66d9ef">if</span> (A[B[i]] <span style="color:#f92672">==</span> A[B[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]]){
+</span></span><span style="display:flex;"><span>					<span style="color:#66d9ef">if</span> (B[i] <span style="color:#f92672">&gt;</span> B[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]){
+</span></span><span style="display:flex;"><span>						<span style="color:#66d9ef">int</span> temp <span style="color:#f92672">=</span> B[i];
+</span></span><span style="display:flex;"><span>						B[i] <span style="color:#f92672">=</span> B[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>];
+</span></span><span style="display:flex;"><span>						B[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> temp;
+</span></span><span style="display:flex;"><span>					}
+</span></span><span style="display:flex;"><span>				}
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> sum <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> n; i<span style="color:#f92672">++</span>){
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> (A[i] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>) <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;%d %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, B[i] <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>, A[i]);
+</span></span><span style="display:flex;"><span>		sum <span style="color:#f92672">+=</span> A[i];
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 추천 친구가 없다면 &#34;No Friend&#34; 출력
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> (sum <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) <span style="color:#a6e22e">printf</span>(<span style="color:#e6db74">&#34;No friend</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">free</span>(A);
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">free</span>(B);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 겹치는 노드의 여부를 체크
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">Checknode</span>(GraphType<span style="color:#f92672">*</span> g, <span style="color:#66d9ef">int</span> id, <span style="color:#66d9ef">int</span> n) {
+</span></span><span style="display:flex;"><span>    GraphNode<span style="color:#f92672">*</span> checkNode <span style="color:#f92672">=</span> g<span style="color:#f92672">-&gt;</span>adj_list[id];
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">while</span> (checkNode <span style="color:#f92672">!=</span> NULL) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (checkNode<span style="color:#f92672">-&gt;</span>vertex <span style="color:#f92672">==</span> n) {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>; 
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        checkNode <span style="color:#f92672">=</span> checkNode<span style="color:#f92672">-&gt;</span>link;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h5 id="mainc">main.c
+</h5><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#define _CRT_SECURE_NO_WARNINGS 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#define _CRT_NONSTDC_NO_DEPRECATE
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;string.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;ctype.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;math.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;time.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;malloc.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;graph.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (argc <span style="color:#f92672">!=</span> <span style="color:#ae81ff">2</span>) {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fprintf</span>(stderr, <span style="color:#e6db74">&#34;Usage: %s graph.txt</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, argv[<span style="color:#ae81ff">0</span>]);
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">exit</span>(EXIT_FAILURE);
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> fname <span style="color:#f92672">=</span> argv[<span style="color:#ae81ff">1</span>];
+</span></span><span style="display:flex;"><span>	FILE<span style="color:#f92672">*</span> fin <span style="color:#f92672">=</span> <span style="color:#a6e22e">fopen</span>(fname, <span style="color:#e6db74">&#34;r&#34;</span>);
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> (fin <span style="color:#f92672">==</span> NULL) {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fprintf</span>(stderr, <span style="color:#e6db74">&#34;Can`t open %s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, fname);
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">exit</span>(EXIT_FAILURE);
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	GraphType g;
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">graph_init</span>(<span style="color:#f92672">&amp;</span>g);
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">int</span> n, m, id, fr, to;
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">fscanf</span>(fin, <span style="color:#e6db74">&#34;%d %d %d&#34;</span>, <span style="color:#f92672">&amp;</span>n, <span style="color:#f92672">&amp;</span>m, <span style="color:#f92672">&amp;</span>id);
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> n; i<span style="color:#f92672">++</span>) <span style="color:#a6e22e">insert_vertex</span>(<span style="color:#f92672">&amp;</span>g, i);
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> m; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fscanf</span>(fin, <span style="color:#e6db74">&#34;%d %d&#34;</span>, <span style="color:#f92672">&amp;</span>fr, <span style="color:#f92672">&amp;</span>to);
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">insert_edge</span>(<span style="color:#f92672">&amp;</span>g, fr <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>, to <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">insert_edge</span>(<span style="color:#f92672">&amp;</span>g, to <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>, fr <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Findfriend</span>(<span style="color:#f92672">&amp;</span>g, id, n);
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">fclose</span>(fin);
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2025 My New Hugo Site
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.30.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.4aa8aea7e9db05e65a1b64f064e1686cddc2f0ba4fd7440017c7c0e7c484690b.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
