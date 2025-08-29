@@ -8,6 +8,9 @@ links:
     description: GitHub is the world's largest software development platform.
     website: https://github.com
     image: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
+hidden: false
+comments: true
+draft: true
 ---
 
 ## SNS 친구 추천 시스템
