@@ -1,37 +1,24 @@
 # Configure main menu and social menu
-[[main]]
-identifier = "home"
-name = "Home"
-url = "/"
-weight = 1
-[main.params]
-icon = "home"
-newtab = false
-
-[[main]]
-identifier = "posts"
-name = "Posts"
-url = "/posts"
-weight = 2
-[main.params]
-icon = "archives"
-newtab = false
-
-[[main]]
-identifier = "categories"
-name = "Categories"
-url = "/categories"
-weight = 3
-[main.params]
-icon = "categories"
-newtab = false
+#[[main]]
+#identifier = "home"
+#name = "Home"
+#url = "/"
+#[main.params]
+#icon = "home"
+#newtab = true
 
 [[social]]
 identifier = "github"
 name = "GitHub"
-url = "https://github.com/pandas2025"
+url = "https://github.com/CaiJimmy/hugo-theme-stack"
 
 [social.params]
 icon = "brand-github"
 
+[[social]]
+identifier = "twitter"
+name = "Twitter"
+url = "https://twitter.com"
 
+[social.params]
+icon = "brand-twitter"
