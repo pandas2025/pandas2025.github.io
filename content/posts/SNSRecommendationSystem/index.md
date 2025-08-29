@@ -1,25 +1,28 @@
 +++
 date = '2025-06-04T15:49:58+09:00'
 draft = false
-title = 'SNS 친구 추천 시스템'
+title = 'SNS Recommendation System'
+categories = ['개발']
+tags = ['C']
+image = 'sns.jpg'
 +++
 
-## 과제 : SNS 친구 추천 시스템
+## SNS 친구 추천 시스템
 > sns에서 사용자들 간의 친구 관계를 그래프로 표현하고, 특정 사용자에게 새로운 친구를 추천하는 프로그램
 
-#### 요구사항
+### 요구사항
  - 무방향 그래프로 친구 관계를 표현
  - 특정 사용자의 친구가 아니면서, 공통 친구가 가장 많은 사용자들을 추천
  - 추천 대상은 공통 친구 수가 많은 순서대로 정렬
  - 단, 공통 친구 수가 같다면 사용자 ID 오름차순으로 정렬
 
-#### 주의사항
+### 주의사항
  - 그래프는 인접 리스트로 표현해야 한다.
  - 추천 친구가 없을 경우에는 "No Friend"라고 출력해야 한다.
  - 프로그램의 실행은 명령줄에서 아래와 같이 실행되어야 한다.
 
-
-##### graph.h
+### 코드
+#### graph.h
 ```c
 #ifndef _GRAPH_
 #define _GRAPH_
@@ -48,7 +51,7 @@ int Checknode(GraphType* g, int id, int n);
 #endif // !_GRAPH_
 ```
 
-##### graph.c
+#### graph.c
 ```c
 #define _CRT_SECURE_NO_WARNINGS 
 #define _CRT_NONSTDC_NO_DEPRECATE
@@ -161,7 +164,7 @@ int Checknode(GraphType* g, int id, int n) {
 }
 ```
 
-##### main.c
+#### main.c
 ``` c
 #define _CRT_SECURE_NO_WARNINGS 
 #define _CRT_NONSTDC_NO_DEPRECATE
